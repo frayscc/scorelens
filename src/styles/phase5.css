@@ -1,0 +1,36 @@
+.exam-list article {
+  grid-template-columns: 62px minmax(220px, 1fr) auto 62px;
+  transition: opacity .15s, background .15s;
+}
+
+.exam-list article.dragging { opacity: .42; background: var(--brand-soft); }
+.drag-handle { display: flex; align-items: center; gap: 7px; color: #95a69f; cursor: grab; }
+.drag-handle:active { cursor: grabbing; }
+.drag-handle b { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 500; }
+.exam-main { min-width: 0; }
+.exam-name { display: flex; align-items: center; gap: 7px; }
+.exam-name button,.rename-exam button,.exam-order-buttons button { display: grid; place-items: center; padding: 6px; border: 0; border-radius: 6px; background: transparent; color: #718079; }
+.exam-name button { opacity: 0; }
+.exam-list article:hover .exam-name button { opacity: 1; }
+.exam-name button:hover,.rename-exam button:hover,.exam-order-buttons button:hover:not(:disabled) { background: var(--brand-soft); color: var(--brand); }
+.rename-exam { display: flex; align-items: center; gap: 4px; }
+.rename-exam input { width: min(360px, 100%); padding: 7px 9px; border: 1px solid var(--brand); border-radius: 7px; outline: 2px solid rgba(18,107,79,.1); }
+.exam-order-buttons { display: flex; justify-content: flex-end; gap: 2px; }
+.exam-order-buttons button:disabled { opacity: .25; cursor: not-allowed; }
+
+.trend-panel { overflow: hidden; }
+.trend-selectors { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 11px; max-width: 62%; }
+.trend-selectors label { display: inline-flex; align-items: center; gap: 4px; color: #53625c; font-size: 11px; font-weight: 650; }
+.trend-selectors input { accent-color: var(--brand); }
+.trend-chart { padding: 15px 20px 12px; }
+.trend-chart svg { display: block; width: 100%; max-height: 430px; overflow: visible; }
+.trend-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 15px; min-height: 20px; }
+.trend-legend span { display: inline-flex; align-items: center; gap: 5px; color: #53625c; font-size: 10px; }
+.trend-legend i { display: inline-block; width: 13px; height: 3px; border-radius: 3px; }
+.trend-grid { stroke: #e3eae6; stroke-width: 1; stroke-dasharray: 3 4; }
+.trend-y-label,.trend-x-label,.trend-axis-note { fill: #718079; font-size: 10px; }
+.trend-x-tick { stroke: #a9b8b1; stroke-width: 1; }
+.trend-footnote { margin: -5px 0 0; text-align: center; color: var(--muted); font-size: 10px; }
+.trend-empty { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.trend-empty strong { color: var(--muted); }
+.trend-empty p { color: #8a9992; font-size: 12px; }

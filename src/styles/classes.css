@@ -1,0 +1,60 @@
+body:has(.class-manager) { min-width: 0; }
+
+.class-manager {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(24px, 6vw, 64px) clamp(16px, 4vw, 32px);
+}
+
+.class-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.class-heading h1 { margin: 4px 0 0; font-size: 28px; }
+
+.class-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 300px);
+  align-items: start;
+  gap: 18px;
+}
+
+.class-empty { margin: 0; padding: 24px; color: var(--muted); font-size: 14px; }
+.class-row { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; padding: 16px 24px; }
+.class-row + .class-row { border-top: 1px solid var(--line); }
+.class-info { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.class-info small { color: var(--muted); }
+.class-actions { display: flex; flex-wrap: wrap; gap: 8px; flex-shrink: 0; }
+.class-actions .button { min-height: 44px; padding-inline: 12px; }
+.button.class-delete { color: var(--weak-text); }
+.button.class-delete:hover:not(:disabled) { background: var(--weak); }
+.class-create { width: auto; margin: 0; }
+.class-create h2 { font-size: 17px; }
+.class-create .button { min-height: 44px; }
+
+.leave-class {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 8px;
+  background: transparent;
+  color: #e7f3ee;
+  font-size: 14px;
+}
+
+.leave-class:hover:not(:disabled) { background: rgba(255, 255, 255, .1); }
+.leave-class:disabled { opacity: .55; cursor: wait; }
+.leave-class:focus-visible { outline: 2px solid #e7f3ee; outline-offset: 2px; }
+
+@media (max-width: 720px) {
+  .class-layout { grid-template-columns: 1fr; }
+  .class-row { flex-wrap: wrap; }
+}

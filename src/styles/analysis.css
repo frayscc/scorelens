@@ -1,0 +1,59 @@
+.export-actions {
+  display: flex;
+  gap: 9px;
+}
+
+.analysis-toolbar .search { min-width: 210px; }
+
+.analysis-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.analysis-kpis button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 68px;
+  padding: 14px 17px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--muted);
+  text-align: left;
+}
+
+.analysis-kpis button strong { color: var(--ink); font-size: 23px; }
+.analysis-kpis button.active { outline: 2px solid var(--brand); outline-offset: -2px; }
+.analysis-kpis button.advantage { background: var(--adv); color: var(--adv-text); }
+.analysis-kpis button.weakness { background: var(--weak); color: var(--weak-text); }
+.analysis-kpis button.advantage strong { color: var(--adv-text); }
+.analysis-kpis button.weakness strong { color: var(--weak-text); }
+
+.sortable-header { padding: 0; }
+
+.sortable-header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.sortable-header button.sort-active { color: var(--brand); }
+.sortable-header button:hover { background: var(--brand-soft); }
+.sortable-header button:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.student-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.rank-change.progress, .legend .rank-progress { background: #e1f3ed; color: #146047; }
+.rank-change.decline, .legend .rank-decline { background: #fff4dc; color: #9a5a12; }
+.rank-change { white-space: nowrap; font-weight: 650; }
+.no-results { padding: 45px; text-align: center; color: var(--muted); font-size: 13px; }
+.export-error { position: fixed; right: 28px; bottom: 24px; z-index: 15; box-shadow: var(--shadow); }

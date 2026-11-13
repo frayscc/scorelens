@@ -1,0 +1,82 @@
+.setting-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.alias-add {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.alias-add input,
+.alias-add select {
+  min-width: 220px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.alias-add input { flex: 1; }
+
+.alias-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 5px;
+}
+
+.alias-group {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+}
+
+.alias-group > strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.alias-group > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.alias-group span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px;
+  border-radius: 6px;
+  background: #f2f6f4;
+  color: #53625c;
+  font-size: 11px;
+}
+
+.alias-group button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a44928;
+}
+
+.advanced {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.advanced summary {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}

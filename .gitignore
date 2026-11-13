@@ -1,0 +1,11 @@
+node_modules/
+dist/
+output/
+tmp/
+*.tsbuildinfo
+.DS_Store
+/vite.config.js
+/vite.config.d.ts
+*.scorelens
+.env
+.env.*
