@@ -1,0 +1,15 @@
+services:
+  scorelens:
+    image: ${SCORELENS_IMAGE:-frayscc/scorelens:latest}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?Set ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    volumes:
+      - scorelens-data:/data
+volumes:
+  scorelens-data:

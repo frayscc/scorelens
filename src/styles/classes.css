@@ -58,3 +58,7 @@ body:has(.class-manager) { min-width: 0; }
   .class-layout { grid-template-columns: 1fr; }
   .class-row { flex-wrap: wrap; }
 }
+.account-bar { display:flex; justify-content:flex-end; align-items:center; gap:12px; padding:10px 24px; background:white; border-bottom:1px solid var(--line); position:relative; z-index:5; }
+body:has(.account-bar) .sidebar { top:65px; }
+.account-form { max-width:420px; margin:50px auto; }
+.account-form form { display:grid; gap:16px; }

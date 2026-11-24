@@ -23,11 +23,11 @@ const navigation = [
 
 export function App() {
   const { project, setProject, selectProject, exitProject, ready, savedAt, loadError } = useProject();
-  if (!ready) return <div className="boot">正在打开本地项目…</div>;
+  if (!ready) return <div className="boot">正在打开班级数据…</div>;
 
   async function importBackup(file: File) {
     const restored = await importProjectFile(file);
-    if (await hasProject(restored.projectId) && !window.confirm(`用备份覆盖本地班级「${restored.projectName}」吗？\n\n该班级当前的学生、考试和设置将被备份中的记录替换。`)) return;
+    if (await hasProject(restored.projectId) && !window.confirm(`用备份覆盖班级「${restored.projectName}」吗？\n\n该班级当前的学生、考试和设置将被备份中的记录替换。`)) return;
     await setProject(restored, true);
   }
 
@@ -61,7 +61,7 @@ function ClassWorkspace({ project, savedAt, onSave, onExit, onImport }: Workspac
   function save(next: ScoreLensProject) { void run(() => onSave(next)); }
 
   return <div className="app-shell">
-    <aside className="sidebar"><div className="logo"><div className="brand-mark small"><BookOpenCheck/></div><div><strong>ScoreLens</strong><span>成绩洞察</span></div></div><div className="project-chip"><small>当前项目</small><strong>{project.projectName}</strong><span>{project.students.filter((s) => s.status === 'active').length} 名在读学生 · {project.exams.length} 场考试</span></div><nav>{navigation.map(({ id, label, icon: Icon }) => <button className={page === id ? 'active' : ''} onClick={() => setPage(id)} key={id}><Icon size={19}/>{label}</button>)}</nav><div className="sidebar-foot"><button className="leave-class" disabled={leaving} onClick={async () => { setLeaving(true); await run(onExit); setLeaving(false); }}><LogOut size={16}/>退出班级</button><span className="save-dot"/> {savedAt ? '已自动保存' : '本地数据已就绪'}</div></aside>
+    <aside className="sidebar"><div className="logo"><div className="brand-mark small"><BookOpenCheck/></div><div><strong>ScoreLens</strong><span>成绩洞察</span></div></div><div className="project-chip"><small>当前项目</small><strong>{project.projectName}</strong><span>{project.students.filter((s) => s.status === 'active').length} 名在读学生 · {project.exams.length} 场考试</span></div><nav>{navigation.map(({ id, label, icon: Icon }) => <button className={page === id ? 'active' : ''} onClick={() => setPage(id)} key={id}><Icon size={19}/>{label}</button>)}</nav><div className="sidebar-foot"><button className="leave-class" disabled={leaving} onClick={async () => { setLeaving(true); await run(onExit); setLeaving(false); }}><LogOut size={16}/>退出班级</button><span className="save-dot"/> {savedAt ? '已自动保存' : '数据已就绪'}</div></aside>
     <main className="content">{error && <div className="error-box" role="alert">{error}</div>}{page === 'exams' && <ExamPage project={project} onChange={save} onImport={() => setWizard(true)}/>} {page === 'analysis' && <AnalysisPage project={project} onProjectChange={save}/>} {page === 'students' && <StudentProfilePage project={project}/>} {page === 'settings' && <SettingsPage project={project} onChange={save} onImportBackup={() => projectFileRef.current?.click()}/>}</main>
     <input ref={projectFileRef} hidden type="file" accept=".scorelens" onChange={(event) => {
       const file = event.target.files?.[0];

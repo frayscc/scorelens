@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ScoreLensProject } from '../models/project';
 import { leaveProject, loadCurrentProject, openProject, saveProject } from '../storage/indexedDb';
 
@@ -7,15 +7,21 @@ export function useProject() {
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const saveSequence = useRef(0);
   useEffect(() => {
     loadCurrentProject().then(setProjectState)
-      .catch(() => setLoadError('无法打开本地班级数据。'))
+      .catch(() => setLoadError('无法打开班级数据。'))
       .finally(() => setReady(true));
   }, []);
   const setProject = useCallback(async (next: ScoreLensProject, activate = false) => {
+    const sequence = ++saveSequence.current;
+    if (!activate) setProjectState(next);
+    setSavedAt(null);
     const saved = await saveProject(next, activate);
-    setProjectState(saved);
-    setSavedAt(saved.updatedAt);
+    if (sequence === saveSequence.current) {
+      setProjectState(saved);
+      setSavedAt(saved.updatedAt);
+    }
   }, []);
   async function selectProject(projectId: string) {
     setProjectState(await openProject(projectId));

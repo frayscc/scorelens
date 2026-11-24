@@ -29,7 +29,7 @@ export function ClassManager({ loadError, onCreate, onOpen, onImport }: Props) {
   }
 
   function remove(item: ClassSummary) {
-    if (!window.confirm(`确定删除「${item.projectName}」吗？\n\n该班级的学生和考试记录将从本浏览器删除。没有 .scorelens 备份时将无法恢复。`)) return;
+    if (!window.confirm(`确定删除「${item.projectName}」吗？\n\n该班级的学生和考试记录将被永久删除。没有 .scorelens 备份时将无法恢复。`)) return;
     void run(async () => {
       await deleteProject(item.projectId);
       setClasses((current) => current?.filter((entry) => entry.projectId !== item.projectId) ?? []);
@@ -43,7 +43,7 @@ export function ClassManager({ loadError, onCreate, onOpen, onImport }: Props) {
     </header>
     <div className="class-layout">
       <section className="panel class-list">
-        <div className="section-title"><div><h2>本地班级</h2><p>选择一个班级继续记录考试成绩。</p></div></div>
+        <div className="section-title"><div><h2>班级列表</h2><p>选择一个班级继续记录考试成绩。</p></div></div>
         {classes === null && !error && <p className="class-empty" role="status">正在读取班级…</p>}
         {classes?.length === 0 && <p className="class-empty">暂无班级。可以新建班级或导入备份。</p>}
         {classes?.map((item) => <article className="class-row" key={item.projectId}>

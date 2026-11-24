@@ -5,6 +5,7 @@ import { detectHeaderRows, flattenMultiLevelHeaders, headerStructureSignature } 
 import { findMappingConflicts, matchField } from '../parser/fieldMatcher';
 import { calculateCapabilities, normalizeRows, parseWorkbook, selectedSubjectNames, type ParsedSheet } from '../parser/workbookParser';
 import { detectStudentChanges, mergeExamStudents } from '../parser/studentMerge';
+import { serverMode } from '../storage/indexedDb';
 
 interface SheetDraft extends ParsedSheet {
   selected: boolean;
@@ -137,7 +138,7 @@ export function ImportWizard({ project, onComplete, onCancel }: Props) {
     <header className="wizard-head"><div><span className="eyebrow">导入向导</span><h2>导入成绩数据</h2></div><button className="icon-button" disabled={saving} onClick={onCancel} aria-label="关闭"><X size={20}/></button></header>
     <div className="stepper">{steps.map((label, index) => <div className={`step ${index === step ? 'active' : ''} ${index < step ? 'done' : ''}`} key={label}><span>{index < step ? <Check size={13}/> : index + 1}</span><small>{label}</small></div>)}</div>
     <div className="wizard-body">
-      {step === 0 && <div className="dropzone" onClick={() => fileRef.current?.click()}><Upload size={30}/><strong>选择 XLSX、XLS 或 CSV 成绩表</strong><p>文件只在本机浏览器中处理，不会上传。</p><input ref={fileRef} hidden type="file" accept=".xlsx,.csv,.xls" onChange={(event) => chooseFile(event.target.files?.[0])}/></div>}
+      {step === 0 && <div className="dropzone" onClick={() => fileRef.current?.click()}><Upload size={30}/><strong>选择 XLSX、XLS 或 CSV 成绩表</strong><p>{serverMode ? '文件在浏览器中读取，确认导入后班级数据将保存到服务器。' : '文件只在本机浏览器中处理，不会上传。'}</p><input ref={fileRef} hidden type="file" accept=".xlsx,.csv,.xls" onChange={(event) => chooseFile(event.target.files?.[0])}/></div>}
       {step === 1 && <><h3>选择需要导入的工作表</h3><p className="muted">隐藏和空工作表已自动排除。</p><div className="sheet-list">{drafts.map((draft) => <label key={draft.name}><input type="checkbox" checked={draft.selected} onChange={(event) => setDrafts((items) => items.map((item) => item.name === draft.name ? { ...item, selected: event.target.checked } : item))}/><FileSpreadsheet size={18}/><span>{draft.name}</span><small>{draft.table.length} 行</small></label>)}</div></>}
       {step >= 2 && step <= 3 && current && <><div className="draft-tabs">{selected.map((draft, index) => <button className={index === active ? 'active' : ''} onClick={() => setActive(index)} key={draft.name}>{draft.name}</button>)}</div>
         {step === 2 ? <><div className="form-row"><label>考试名称<input value={current.examName} onChange={(e) => updateCurrent({ examName: e.target.value })}/></label><label>表头开始（第几行）<input type="number" min="1" value={current.headerStartRow + 1} onChange={(e) => updateCurrent({ headerStartRow: Math.max(0, Number(e.target.value) - 1) })}/></label><label>表头层数<select value={current.headerDepth} onChange={(e) => updateCurrent({ headerDepth: Number(e.target.value) as 1 | 2 | 3 })}><option>1</option><option>2</option><option>3</option></select></label><label>数据开始（第几行）<input type="number" min="1" value={current.dataStartRow + 1} onChange={(e) => updateCurrent({ dataStartRow: Math.max(0, Number(e.target.value) - 1) })}/></label></div><Preview draft={current}/></>

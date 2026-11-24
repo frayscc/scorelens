@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/finalize-build.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "start": "node server/index.mjs",
+    "test:server": "node --test server/check.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/noto-sans-sc": "^0.4.3",

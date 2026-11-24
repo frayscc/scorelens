@@ -1,6 +1,6 @@
 # ScoreLens
 
-面向中学班主任的本地化学生成绩分析工具。数据只在浏览器本地处理，不上传服务器。
+面向中学班主任的学生成绩分析工具。服务器版支持账号与 SQLite 数据存储，离线单文件版使用浏览器本地存储。
 
 ## 开发
 
@@ -31,3 +31,36 @@ npm run build
 - 级次进退步：总分及各学科的 `sourceRankChange` 已贯通表头识别、映射、清洗、项目保存/恢复、学科分析页面、XLSX 和 PDF；正数显示为 `↑`，负数显示为 `↓`
 
 Phase 1–6 主流程已经贯通。后续收尾重点为考试更新、重新映射、手动修改和学生状态管理等完整验收项。
+
+## 服务器部署与教师账号
+
+服务器版使用 Node.js 24 和 SQLite，班级数据按账号隔离。浏览器访问服务器地址时使用数据库，直接打开离线 HTML 时继续使用 IndexedDB。原有数据可在离线版导出 .scorelens，然后登录服务器版导入。
+
+部署前安装 Docker Compose，将 .env.example 复制为 .env，填写管理员用户名、至少 10 位的密码及正式 HTTPS 访问地址 PUBLIC_ORIGIN。运行：
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+服务绑定服务器本机的 3000 端口，将 HTTPS 反向代理指向 http://127.0.0.1:3000，并允许至少 30 MB 的请求体。PUBLIC_ORIGIN 必须与浏览器访问的协议、域名和端口一致。
+
+首次启动自动创建管理员账号。管理员登录后，点击“邀请码管理”，设置有效小时数并生成邀请码。代码仅在生成时显示，复制后交给老师。每个邀请码可注册一个账号，也可提前撤销。老师点击“使用邀请码注册”自行设置用户名和密码。修改环境变量里的管理员密码不会修改已有账号。
+
+SQLite 文件位于持久卷 /data/scorelens.sqlite。备份前停止容器，再备份整个数据卷（包含可能存在的 WAL 文件），完成后启动容器。升级时保留数据卷。每位老师也可以继续导出 .scorelens 备份。
+
+本机验证可先设置环境变量 ADMIN_USERNAME、ADMIN_PASSWORD、PUBLIC_ORIGIN=http://localhost:3000、COOKIE_SECURE=false，然后运行 npm run build 和 npm start。COOKIE_SECURE=false 仅用于本机 HTTP 测试。开发前端可另开终端运行 npm run dev，将 PUBLIC_ORIGIN 设置为开发前端地址。
+
+运行 npm test 验证成绩核心逻辑，npm run test:server 验证账号、邀请码、权限隔离、保存冲突和持久化。
+
+考试列表增加“删除”按钮。确认删除后仅移除当前考试，保留班级学生名单，其余考试按连续顺序排列，趋势图随之更新。
+
+## GitHub Actions 发布镜像
+
+镜像地址为 frayscc/scorelens。先在 Docker Hub 创建该仓库，再在 GitHub 仓库 Settings → Secrets and variables → Actions 中新增 DOCKERHUB_TOKEN，填入具有该镜像仓库写权限的 Docker Hub Access Token。
+
+为控制构建用量，普通推送不会触发镜像发布。在 GitHub Actions 页面选择 Publish Docker image → Run workflow，选择 main 分支手动发布。也可以推送 v 开头的版本标签（例如 v0.2.0）触发发布。
+
+工作流先运行应用和后端测试，再构建 linux/amd64 镜像。main 分支手动发布或版本标签发布会更新 latest，同时保留 sha-完整提交号标签；版本发布额外生成版本标签。使用标准 Ubuntu runner、依赖缓存和构建缓存，发布任务限时 25 分钟。
+
+服务器首次部署只需 compose.yaml 和配置好的 .env；如果 Docker Hub 仓库为私有，先执行 docker login。执行 docker compose pull，再执行 docker compose up -d。需要固定版本时，在 .env 中添加 SCORELENS_IMAGE=frayscc/scorelens:v0.2.0，替换为已发布的版本。
