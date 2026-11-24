@@ -30,6 +30,17 @@ describe('value normalization', () => {
 });
 
 describe('header and field matching', () => {
+  it('automatically maps standalone grade rank and subject names at high confidence', () => {
+    const rank = matchField('级次', 0, DEFAULT_SUBJECTS, DEFAULT_ALIASES);
+    expect(rank.target).toEqual({ type: 'total', metric: 'gradeRank' });
+    expect(rank.confidence).toBeGreaterThanOrEqual(.85);
+    for (const name of ['语文', '数学', '英语', '物理', '政治', '外语']) {
+      const field = matchField(name, 1, DEFAULT_SUBJECTS, DEFAULT_ALIASES);
+      expect(field.target).toEqual({ type: 'subject', subjectId: detectSubject(name, DEFAULT_SUBJECTS)?.subjectId, metric: 'score' });
+      expect(field.confidence).toBeGreaterThanOrEqual(.85);
+    }
+    expect(matchField('班次', 2, DEFAULT_SUBJECTS, DEFAULT_ALIASES).target).toEqual({ type: 'ignore' });
+  });
   it('detects a header after title rows', () => {
     const table = [['2026期中考试'], ['初三15班'], [], ['学号', '姓名', '总分', '总排名', '语文成绩']];
     expect(detectHeaderRows(table, DEFAULT_SUBJECTS, DEFAULT_ALIASES).headerStartRow).toBe(3);

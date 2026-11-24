@@ -9,15 +9,17 @@ import { DEFAULT_ALIASES, DEFAULT_SUBJECTS } from '../constants';
 import type { MetricType } from '../models/project';
 import { AnalysisPage } from './AnalysisPage';
 import { StudentProfilePage } from './StudentProfilePage';
+import { StudentManagementPage } from './StudentManagementPage';
 import { ExamList } from '../components/ExamList';
 import { ClassManager } from './ClassManager';
 import { hasProject } from '../storage/indexedDb';
 
-type Page = 'exams' | 'analysis' | 'students' | 'settings';
+type Page = 'exams' | 'analysis' | 'students' | 'settings' | 'roster';
 const navigation = [
   { id: 'exams' as const, label: '考试管理', icon: LayoutDashboard },
   { id: 'analysis' as const, label: '学科分析', icon: BarChart3 },
   { id: 'students' as const, label: '学生画像', icon: GraduationCap },
+  { id: 'roster' as const, label: '学生管理', icon: BookOpenCheck },
   { id: 'settings' as const, label: '设置', icon: Settings },
 ];
 
@@ -62,7 +64,7 @@ function ClassWorkspace({ project, savedAt, onSave, onExit, onImport }: Workspac
 
   return <div className="app-shell">
     <aside className="sidebar"><div className="logo"><div className="brand-mark small"><BookOpenCheck/></div><div><strong>ScoreLens</strong><span>成绩洞察</span></div></div><div className="project-chip"><small>当前项目</small><strong>{project.projectName}</strong><span>{project.students.filter((s) => s.status === 'active').length} 名在读学生 · {project.exams.length} 场考试</span></div><nav>{navigation.map(({ id, label, icon: Icon }) => <button className={page === id ? 'active' : ''} onClick={() => setPage(id)} key={id}><Icon size={19}/>{label}</button>)}</nav><div className="sidebar-foot"><button className="leave-class" disabled={leaving} onClick={async () => { setLeaving(true); await run(onExit); setLeaving(false); }}><LogOut size={16}/>退出班级</button><span className="save-dot"/> {savedAt ? '已自动保存' : '数据已就绪'}</div></aside>
-    <main className="content">{error && <div className="error-box" role="alert">{error}</div>}{page === 'exams' && <ExamPage project={project} onChange={save} onImport={() => setWizard(true)}/>} {page === 'analysis' && <AnalysisPage project={project} onProjectChange={save}/>} {page === 'students' && <StudentProfilePage project={project}/>} {page === 'settings' && <SettingsPage project={project} onChange={save} onImportBackup={() => projectFileRef.current?.click()}/>}</main>
+    <main className="content">{error && <div className="error-box" role="alert">{error}</div>}{page === 'exams' && <ExamPage project={project} onChange={save} onImport={() => setWizard(true)}/>} {page === 'analysis' && <AnalysisPage project={project} onProjectChange={save}/>} {page === 'students' && <StudentProfilePage project={project}/>} {page === 'roster' && <StudentManagementPage project={project} onSave={onSave}/>} {page === 'settings' && <SettingsPage project={project} onChange={save} onImportBackup={() => projectFileRef.current?.click()}/>}</main>
     <input ref={projectFileRef} hidden type="file" accept=".scorelens" onChange={(event) => {
       const file = event.target.files?.[0];
       event.target.value = '';

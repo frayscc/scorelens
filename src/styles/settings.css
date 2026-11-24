@@ -80,3 +80,10 @@
   font-size: 12px;
   cursor: pointer;
 }
+.student-add { margin-bottom:18px; }
+.student-add form { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
+.student-add form .button { align-self:flex-end; min-height:44px; }
+.student-add input { min-height:44px; }
+.student-add select, .student-management-toolbar select, .student-management-toolbar input, .student-management-select { padding:10px; min-height:44px; border:1px solid var(--line); border-radius:8px; background:white; color:var(--ink); }
+.student-management-toolbar { flex-wrap:wrap; }
+.student-management-toolbar > span { color:var(--muted); font-size:12px; }

@@ -18,6 +18,7 @@ export interface Student {
   studentId: string;
   name: string;
   status: 'active' | 'inactive';
+  admissionType?: 'regular' | 'transfer';
   createdAt: string;
 }
 

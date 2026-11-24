@@ -32,13 +32,13 @@ export function matchField(header: string, index: number, subjects: SubjectDefin
       sourceColumnIndex: index,
       sourceHeader: header,
       target: { type: 'subject', subjectId: subject.subjectId, metric: metric?.metric ?? 'score' },
-      confidence: metric ? Math.min(subject.confidence, metric.confidence) : 0.78,
+      confidence: metric ? Math.min(subject.confidence, metric.confidence) : subject.confidence >= 0.92 ? subject.confidence : 0.78,
     };
   }
   if (/总分|总成绩/.test(source)) return { sourceColumnIndex: index, sourceHeader: header, target: { type: 'total', metric: metric?.metric ?? 'score' }, confidence: 0.94 };
   if (/总/.test(source) && metric) return { sourceColumnIndex: index, sourceHeader: header, target: { type: 'total', metric: metric.metric }, confidence: 0.9 };
-  if (source === '校次' && metric?.metric === 'gradeRank') {
-    return { sourceColumnIndex: index, sourceHeader: header, target: { type: 'total', metric: 'gradeRank' }, confidence: metric.confidence };
+  if (['校次', '级次'].includes(source)) {
+    return { sourceColumnIndex: index, sourceHeader: header, target: { type: 'total', metric: 'gradeRank' }, confidence: 0.94 };
   }
   if (metric?.metric === 'sourceRankChange' && aliases.metrics.sourceRankChange.some((alias) => simplify(alias) === source)) {
     return { sourceColumnIndex: index, sourceHeader: header, target: { type: 'total', metric: 'sourceRankChange' }, confidence: 0.86 };
