@@ -11,6 +11,7 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await response.json();
+  if (response.status === 401 && path !== '/login' && path !== '/register') window.dispatchEvent(new Event('scorelens-session-expired'));
   if (!response.ok) throw new Error(data.error ?? '服务器请求失败。');
   return data;
 }

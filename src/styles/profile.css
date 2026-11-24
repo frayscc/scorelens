@@ -23,6 +23,8 @@
 }
 
 .student-browser {
+  display: flex;
+  flex-direction: column;
   position: sticky;
   top: 24px;
   max-height: calc(100vh - 70px);
@@ -30,6 +32,7 @@
 }
 
 .student-search {
+  flex-shrink: 0;
   position: relative;
   display: block;
   padding: 14px;
@@ -51,10 +54,12 @@
 }
 
 .student-results {
-  max-height: calc(100vh - 150px);
+  min-height: 0;
   overflow: auto;
   padding: 7px;
 }
+
+.student-batch { flex-shrink: 0; }
 
 .student-results > button {
   width: 100%;

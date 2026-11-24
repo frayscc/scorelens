@@ -62,3 +62,13 @@ body:has(.class-manager) { min-width: 0; }
 body:has(.account-bar) .sidebar { top:65px; }
 .account-form { max-width:420px; margin:50px auto; }
 .account-form form { display:grid; gap:16px; }
+.admin-user { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+.admin-user .class-row { flex-wrap:wrap; }
+.admin-user .class-row p { margin-top:5px; }
+.admin-classes { padding:0 24px 16px; display:grid; gap:8px; }
+.admin-classes > div { display:flex; flex-wrap:wrap; gap:8px 18px; }
+.admin-classes span { color:var(--muted); font-size:12px; }
+.admin-password { display:flex; flex-wrap:wrap; align-items:flex-end; gap:10px; padding:0 24px 18px; }
+.invite-info { display:grid; gap:6px; min-width:0; }
+.invite-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.invite-row { flex-wrap:wrap; padding:16px 0; border-bottom:1px solid var(--line); }

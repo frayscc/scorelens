@@ -37,9 +37,12 @@ export async function createApp({ databasePath, adminUsername, adminPassword, se
     CREATE TABLE IF NOT EXISTS invites(id TEXT PRIMARY KEY, code TEXT NOT NULL UNIQUE, expires INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0, revoked INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS projects(user_id TEXT NOT NULL REFERENCES users(id), id TEXT NOT NULL, revision INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY(user_id,id));
   `);
+  const userColumns = db.prepare('PRAGMA table_info(users)').all().map(column => column.name);
+  if (!userColumns.includes('created')) db.exec('ALTER TABLE users ADD COLUMN created INTEGER');
+  if (!userColumns.includes('last_login')) db.exec('ALTER TABLE users ADD COLUMN last_login INTEGER');
   if (!db.prepare("SELECT id FROM users WHERE role='admin'").get()) {
     const admin = credentials({ username: adminUsername, password: adminPassword });
-    db.prepare('INSERT INTO users VALUES(?,?,?,?)').run(randomUUID(), admin.username, await passwordHash(admin.password), 'admin');
+    db.prepare('INSERT INTO users(id,username,password,role,created) VALUES(?,?,?,?,?)').run(randomUUID(), admin.username, await passwordHash(admin.password), 'admin', Date.now());
   }
   const html = htmlPath ? readFileSync(htmlPath) : Buffer.from('ScoreLens API');
   const attempts = new Map();
@@ -103,6 +106,8 @@ export async function createApp({ databasePath, adminUsername, adminPassword, se
           // Perform a password derivation for unknown accounts as well.
           const valid = await verifyPassword(password, user?.password ?? ('0'.repeat(32) + ':' + '0'.repeat(128)));
           if (!user || !valid) fail(401, '用户名或密码错误。');
+          if (db.prepare('SELECT password FROM users WHERE id=?').get(user.id)?.password !== user.password) fail(401, '账号已变更，请重新登录。');
+          db.prepare('UPDATE users SET last_login=? WHERE id=?').run(Date.now(), user.id);
           return send(issueSession(res, user));
         }
         const digest = await passwordHash(password);
@@ -113,13 +118,53 @@ export async function createApp({ databasePath, adminUsername, adminPassword, se
           if (!invite) fail(400, '邀请码无效、已使用或已过期。');
           if (db.prepare('SELECT id FROM users WHERE username=?').get(username)) fail(409, '用户名已被使用。');
           user = { id: randomUUID(), username, role: 'teacher' };
-          db.prepare('INSERT INTO users VALUES(?,?,?,?)').run(user.id, username, digest, user.role);
+          db.prepare('INSERT INTO users(id,username,password,role,created,last_login) VALUES(?,?,?,?,?,?)').run(user.id, username, digest, user.role, Date.now(), Date.now());
           db.prepare('UPDATE invites SET used=1 WHERE id=?').run(invite.id);
           db.exec('COMMIT');
         } catch (error) { db.exec('ROLLBACK'); throw error; }
         return send(issueSession(res, user), 201);
       }
       const user = session(req);
+      if (path.startsWith('/api/admin/') && user.role !== 'admin') fail(403, '需要管理员权限。');
+      if (method === 'GET' && path === '/api/admin/users') {
+        const projects = db.prepare('SELECT user_id,data FROM projects').all();
+        return send(db.prepare('SELECT id,username,role,created,last_login FROM users ORDER BY username').all().map(account => ({
+          ...account,
+          classes: projects.filter(project => project.user_id === account.id).map(({ data }) => {
+            const project = JSON.parse(data);
+            return { projectId: project.projectId, projectName: project.projectName, studentCount: project.students.length, examCount: project.exams.length, updatedAt: project.updatedAt };
+          }),
+        })));
+      }
+      const accountPath = /^\/api\/admin\/users\/([^/]+)(\/password)?$/.exec(path);
+      if (accountPath) {
+        const accountId = decodeURIComponent(accountPath[1]);
+        const account = db.prepare('SELECT id,username,role FROM users WHERE id=?').get(accountId);
+        if (!account) fail(404, '用户不存在。');
+        if (account.role === 'admin') fail(403, '此处仅管理教师账号。');
+        if (method === 'POST' && accountPath[2]) {
+          const input = await body(req);
+          const { password } = credentials({ username: account.username, password: input.password });
+          const digest = await passwordHash(password);
+          db.exec('BEGIN IMMEDIATE');
+          try {
+            if (!db.prepare('UPDATE users SET password=? WHERE id=?').run(digest, account.id).changes) fail(404, '用户不存在。');
+            db.prepare('DELETE FROM sessions WHERE user_id=?').run(account.id);
+            db.exec('COMMIT');
+          } catch (error) { db.exec('ROLLBACK'); throw error; }
+          return send({ ok: true });
+        }
+        if (method === 'DELETE' && !accountPath[2]) {
+          db.exec('BEGIN IMMEDIATE');
+          try {
+            db.prepare('DELETE FROM sessions WHERE user_id=?').run(account.id);
+            db.prepare('DELETE FROM projects WHERE user_id=?').run(account.id);
+            db.prepare('DELETE FROM users WHERE id=?').run(account.id);
+            db.exec('COMMIT');
+          } catch (error) { db.exec('ROLLBACK'); throw error; }
+          return send({ ok: true });
+        }
+      }
       if (method === 'GET' && path === '/api/me') return send(user);
       if (method === 'POST' && path === '/api/logout') {
         const token = /scorelens_session=([a-f0-9]{64})/.exec(req.headers.cookie ?? '')?.[1];
@@ -138,9 +183,24 @@ export async function createApp({ databasePath, adminUsername, adminPassword, se
           db.prepare('INSERT INTO invites(id,code,expires,created) VALUES(?,?,?,?)').run(id, hash(code), expires, Date.now());
           return send({ id, code, expires }, 201);
         }
-        if (method === 'DELETE') {
-          db.prepare('UPDATE invites SET revoked=1 WHERE id=?').run(decodeURIComponent(path.split('/').at(-1)));
-          return send({ ok: true });
+        const invitePath = /^\/api\/admin\/invites\/([^/]+)(\/(reactivate|permanent))?$/.exec(path);
+        if (invitePath) {
+          const id = decodeURIComponent(invitePath[1]);
+          if (!db.prepare('SELECT id FROM invites WHERE id=?').get(id)) fail(404, '邀请码不存在。');
+          if (method === 'POST' && invitePath[3] === 'reactivate') {
+            const { hours } = await body(req);
+            if (!Number.isInteger(hours) || hours < 1 || hours > 8760) fail(400, '有效期需为 1–8760 小时。');
+            if (!db.prepare('UPDATE invites SET used=0,revoked=0,expires=? WHERE id=?').run(Date.now() + hours * 3600_000, id).changes) fail(404, '邀请码不存在。');
+            return send({ ok: true });
+          }
+          if (method === 'DELETE' && invitePath[3] === 'permanent') {
+            db.prepare('DELETE FROM invites WHERE id=?').run(id);
+            return send({ ok: true });
+          }
+          if (method === 'DELETE' && !invitePath[3]) {
+            db.prepare('UPDATE invites SET revoked=1 WHERE id=?').run(id);
+            return send({ ok: true });
+          }
         }
       }
       if (method === 'GET' && path === '/api/projects') {
