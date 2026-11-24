@@ -40,6 +40,28 @@ describe('multi-student profile reports',()=>{
     expect(reports[1].trends[0].points.map((point)=>point.value)).toEqual([300,null]);
   });
 
+  it('preserves the selected queue order and removes duplicate selections', () => {
+    expect(buildStudentProfileReports(fixture(), ['002', '001', '002', '003'], 'first', ['total']).map(report => report.student.studentId)).toEqual(['002', '001']);
+  });
+
+  it('packs four simple profiles on A4 and uses more pages for long subject tables', async () => {
+    const project = fixture();
+    const template = project.exams[0].students['001'];
+    project.students = Array.from({ length: 4 }, (_, index) => ({ studentId: String(index), name: `学生${index}`, status: 'active', createdAt: 'now' }));
+    project.exams[0].students = Object.fromEntries(project.students.map(student => [student.studentId, { ...structuredClone(template), studentId: student.studentId }]));
+    const font = readFileSync('node_modules/@expo-google-fonts/noto-sans-sc/400Regular/NotoSansSC_400Regular.ttf');
+    const ids = project.students.map(student => student.studentId);
+    const compact = await createStudentProfilesPdfBytes(project, ids, 'first', ['total'], undefined, font, 4);
+    expect((await PDFDocument.load(compact)).getPageCount()).toBe(1);
+    for (let index = 0; index < 20; index++) {
+      const id = `custom${index}`;
+      project.subjects.push({ id, name: `学科${index}`, aliases: [], builtIn: false });
+      for (const data of Object.values(project.exams[0].students)) data.subjects[id] = { score: 90, gradeRank: 50, grade: null };
+    }
+    const expanded = await createStudentProfilesPdfBytes(project, ids, 'first', ['total'], undefined, font, 4);
+    expect((await PDFDocument.load(expanded)).getPageCount()).toBeGreaterThan(1);
+  });
+
   it('defaults PDF trend configuration to total rank when none is checked',()=>{
     const reports=buildStudentProfileReports(fixture(),['001'],'first',[]);
     expect(reports[0].trends.map((series)=>series.metric)).toEqual(['total']);

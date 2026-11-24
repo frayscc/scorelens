@@ -114,12 +114,12 @@ export async function createApp({ databasePath, adminUsername, adminPassword, se
         db.exec('BEGIN IMMEDIATE');
         let user;
         try {
-          const invite = db.prepare('SELECT * FROM invites WHERE code=? AND expires>? AND used=0 AND revoked=0').get(hash(String(input.invite ?? '').trim()), Date.now());
-          if (!invite) fail(400, '邀请码无效、已使用或已过期。');
+          const invite = db.prepare('SELECT * FROM invites WHERE code=? AND expires>? AND revoked=0').get(hash(String(input.invite ?? '').trim()), Date.now());
+          if (!invite) fail(400, '邀请码无效、已撤销或已过期。');
           if (db.prepare('SELECT id FROM users WHERE username=?').get(username)) fail(409, '用户名已被使用。');
           user = { id: randomUUID(), username, role: 'teacher' };
           db.prepare('INSERT INTO users(id,username,password,role,created,last_login) VALUES(?,?,?,?,?,?)').run(user.id, username, digest, user.role, Date.now(), Date.now());
-          db.prepare('UPDATE invites SET used=1 WHERE id=?').run(invite.id);
+          db.prepare('UPDATE invites SET used=used+1 WHERE id=?').run(invite.id);
           db.exec('COMMIT');
         } catch (error) { db.exec('ROLLBACK'); throw error; }
         return send(issueSession(res, user), 201);
@@ -190,7 +190,7 @@ export async function createApp({ databasePath, adminUsername, adminPassword, se
           if (method === 'POST' && invitePath[3] === 'reactivate') {
             const { hours } = await body(req);
             if (!Number.isInteger(hours) || hours < 1 || hours > 8760) fail(400, '有效期需为 1–8760 小时。');
-            if (!db.prepare('UPDATE invites SET used=0,revoked=0,expires=? WHERE id=?').run(Date.now() + hours * 3600_000, id).changes) fail(404, '邀请码不存在。');
+            if (!db.prepare('UPDATE invites SET revoked=0,expires=? WHERE id=?').run(Date.now() + hours * 3600_000, id).changes) fail(404, '邀请码不存在。');
             return send({ ok: true });
           }
           if (method === 'DELETE' && invitePath[3] === 'permanent') {

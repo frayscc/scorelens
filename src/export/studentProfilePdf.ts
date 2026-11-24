@@ -3,11 +3,15 @@ import type { ScoreLensProject, Student } from '../models/project';
 import { buildRadarData, buildStudentSubjectRows, type RadarDatum, type StudentSubjectRow } from '../analytics/studentProfile';
 import { buildRankTrendSeries, rankToY, splitTrendSegments, type TrendMetric, type TrendSeries } from '../analytics/trend';
 import { A4, createChinesePdf, downloadPdf, drawCenteredText, fitText, PDF_COLORS } from './pdfCore';
+import { drawCompactProfile, planProfilePages, profileLegend, wrapPdfText, PROFILE_TREND_COLORS, type ProfileDensity } from './profileLayout';
+
+export type { ProfileDensity } from './profileLayout';
 
 export const STUDENTS_PER_PROFILE_PAGE = 2;
 export const PROFILE_FONT_SIZES = { body: 9, table: 8, section: 10.5, studentName: 16 } as const;
 
 export interface StudentProfileReport {
+  continuation?: number;
   student: Student;
   examName: string;
   totalScore: number | null;
@@ -20,8 +24,12 @@ export interface StudentProfileReport {
 
 export function buildStudentProfileReports(project: ScoreLensProject, studentIds: string[], examId: string, trendMetrics: TrendMetric[]): StudentProfileReport[] {
   const exam = project.exams.find((item) => item.examId === examId);
-  const selected = new Set(studentIds);
-  return project.students.filter((student) => student.status === 'active' && selected.has(student.studentId)).map((student) => {
+  const byId = new Map(project.students.map(student => [student.studentId, student]));
+  const selected = [...new Set(studentIds)].flatMap(id => {
+    const student = byId.get(id);
+    return student?.status === 'active' ? [student] : [];
+  });
+  return selected.map((student) => {
     const data = exam?.students[student.studentId];
     const subjects = exam ? buildStudentSubjectRows(project, exam, student.studentId, project.settings.rankDifferenceThreshold) : [];
     return {
@@ -174,10 +182,50 @@ function drawStudentCard(page: PDFPage, font: PDFFont, report: StudentProfileRep
   drawTrend(page, font, report.trends, contentX, top - 243, width - 28, height - 252);
 }
 
-export async function createStudentProfilesPdfBytes(project: ScoreLensProject, studentIds: string[], examId: string, trendMetrics: TrendMetric[], onProgress?: (completed: number, total: number) => void, fontBytes?: Uint8Array): Promise<Uint8Array> {
+export function compactProfilePlan(project: ScoreLensProject, reports: StudentProfileReport[], density: ProfileDensity, font: PDFFont) {
+  const width = A4.portrait[0] - 56;
+  const lines = [project.projectName + ' · 学生画像', reports[0]?.examName ?? '',
+    `排名差 ≤ -${project.settings.rankDifferenceThreshold} 为优势（绿），≥ ${project.settings.rankDifferenceThreshold} 为薄弱（橙）`,
+    '雷达由内向外：C、C+、B、B+、A、A+；趋势缺失处断开。',
+    ...profileLegend(reports[0]),
+  ].flatMap(text => wrapPdfText(font, text, width, 9));
+  const top = A4.portrait[1] - 34 - lines.length * 12;
+  return { lines, top, pages: planProfilePages(reports, density, font, top - 30) };
+}
+
+let previewFont: Promise<PDFFont> | undefined;
+export async function profilePageCount(project: ScoreLensProject, studentIds: string[], examId: string, metrics: TrendMetric[], density: ProfileDensity) {
+  const reports = buildStudentProfileReports(project, studentIds, examId, metrics);
+  if (!reports.length) return 0;
+  if (density === 2) return paginateStudentProfiles(reports).length;
+  const font = await (previewFont ??= createChinesePdf().then(result => result.font));
+  return compactProfilePlan(project, reports, density, font).pages.length;
+}
+
+export async function createStudentProfilesPdfBytes(project: ScoreLensProject, studentIds: string[], examId: string, trendMetrics: TrendMetric[], onProgress?: (completed: number, total: number) => void, fontBytes?: Uint8Array, density: ProfileDensity = 2): Promise<Uint8Array> {
   const reports = buildStudentProfileReports(project, studentIds, examId, trendMetrics);
   if (!reports.length) throw new Error('请至少选择一名在读学生。');
   const { document, font } = await createChinesePdf(fontBytes);
+  if (density !== 2) {
+    const plan = compactProfilePlan(project, reports, density, font);
+    let completed = 0;
+    plan.pages.forEach((item, index) => {
+      const page = document.addPage(A4.portrait);
+      plan.lines.forEach((line, lineIndex) => {
+        const series = /^趋势线(\d+)/.exec(line);
+        const color = series ? PROFILE_TREND_COLORS[(Number(series[1]) - 1) % PROFILE_TREND_COLORS.length] : PDF_COLORS.ink;
+        page.drawText(line, { x: 28, y: A4.portrait[1] - 28 - lineIndex * 12, size: 9, font, color });
+      });
+      let top = plan.top;
+      item.reports.forEach((report, reportIndex) => {
+        drawCompactProfile(page, font, report, 28, top, A4.portrait[0] - 56, item.heights[reportIndex]);
+        top -= item.heights[reportIndex] + 8;
+        if (!report.continuation) onProgress?.(++completed, reports.length);
+      });
+      page.drawText(`ScoreLens · ${density} 人/页上限 · 第 ${index + 1}/${plan.pages.length} 页`, { x: 28, y: 14, size: 8, font, color: PDF_COLORS.muted });
+    });
+    return document.save({ useObjectStreams: false });
+  }
   const pages = paginateStudentProfiles(reports);
   let completed = 0;
   pages.forEach((items, pageIndex) => {
@@ -205,8 +253,8 @@ export async function createStudentProfilesPdfBytes(project: ScoreLensProject, s
   return document.save({ useObjectStreams: false });
 }
 
-export async function exportStudentProfilesPdf(project: ScoreLensProject, studentIds: string[], examId: string, trendMetrics: TrendMetric[], onProgress?: (completed: number, total: number) => void): Promise<void> {
-  const bytes = await createStudentProfilesPdfBytes(project, studentIds, examId, trendMetrics, onProgress);
+export async function exportStudentProfilesPdf(project: ScoreLensProject, studentIds: string[], examId: string, trendMetrics: TrendMetric[], onProgress?: (completed: number, total: number) => void, density: ProfileDensity = 2): Promise<void> {
+  const bytes = await createStudentProfilesPdfBytes(project, studentIds, examId, trendMetrics, onProgress, undefined, density);
   const exam = project.exams.find((item) => item.examId === examId);
   downloadPdf(bytes, `${project.projectName}_${exam?.name ?? '学生画像'}_学生画像_${studentIds.length}人`);
 }

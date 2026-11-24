@@ -23,7 +23,9 @@ test('accounts, invitations, isolation, conflicts and persistence', async () => 
     assert.equal(invite.status, 201);
     const input = { username: 'teacher', password: 'teacher-password', invite: invite.data.code };
     const results = await Promise.all([request('/register', 'POST', input), request('/register', 'POST', { ...input, username: 'teacher2' })]);
-    assert.equal(results.filter(item => item.status === 201).length, 1);
+    assert.equal(results.filter(item => item.status === 201).length, 2);
+    const usage = await request('/admin/invites', 'GET', undefined, admin.cookie);
+    assert.equal(usage.data.find(item => item.id === invite.data.id).used, 2);
     const teacher = results.find(item => item.status === 201);
     assert.equal((await request('/admin/invites', 'GET', undefined, teacher.cookie)).status, 403);
     assert.equal((await request('/admin/users', 'GET', undefined, teacher.cookie)).status, 403);
@@ -33,6 +35,9 @@ test('accounts, invitations, isolation, conflicts and persistence', async () => 
     assert.equal((await request('/admin/invites/' + revoked.data.id + '/reactivate', 'POST', { hours: 24 }, admin.cookie)).status, 200);
     const reactivated = await request('/register', 'POST', { ...input, username: 'reactivated', invite: revoked.data.code });
     assert.equal(reactivated.status, 201);
+    const another = await request('/register', 'POST', { ...input, username: 'another', invite: revoked.data.code });
+    assert.equal(another.status, 201);
+    assert.equal((await request('/admin/invites', 'GET', undefined, admin.cookie)).data.find(item => item.id === revoked.data.id).used, 2);
     await request('/admin/invites/' + revoked.data.id + '/permanent', 'DELETE', undefined, admin.cookie);
     assert.equal((await request('/admin/invites', 'GET', undefined, admin.cookie)).data.some(item => item.id === revoked.data.id), false);
     const expired = await request('/admin/invites', 'POST', { hours: 1 }, admin.cookie);

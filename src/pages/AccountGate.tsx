@@ -69,17 +69,17 @@ function InviteManager() {
     <label>有效期（小时）<input type="number" min={1} max={8760} value={hours} onChange={event => setHours(Number(event.target.value))}/></label>
     <button disabled={busy} className="button primary" onClick={() => run(async () => {
       const result = await api<{ code: string }>('/admin/invites', 'POST', { hours }); setCode(result.code);
-    })}>生成一次性邀请码</button>
+    })}>生成邀请码</button>
     {code && <label>请复制并发送给老师，此代码仅显示本次<input readOnly value={code} onFocus={event => event.target.select()}/></label>}
     {error && <p className="error-box" role="alert">{error}</p>}
-    <p>重新激活后，原邀请码恢复一次注册机会，有效期按上方小时数重新计算。请保留已发送的原代码。</p>
+    <p>有效期内可不限次注册。重新激活会更新原代码的有效期，保留累计注册次数。</p>
     {invites.map(item => <div className="class-row invite-row" key={item.id}>
       <div className="invite-info"><strong>邀请码 {item.id.slice(0, 8)}</strong><span>创建于 {new Date(item.created).toLocaleString()}</span>
-      <span>到期 {new Date(item.expires).toLocaleString()} · {item.revoked ? '已撤销' : item.used ? '已使用' : item.expires <= Date.now() ? '已过期' : '可使用'}</span></div>
+      <span>到期 {new Date(item.expires).toLocaleString()} · {item.revoked ? '已撤销' : item.expires <= Date.now() ? '已过期' : '可使用'}</span><span>累计注册 {item.used} 人</span></div>
       <div className="invite-actions">
-        <button className="button ghost" disabled={busy || !!item.revoked || !!item.used} onClick={() => run(async () => { await api('/admin/invites/' + item.id, 'DELETE'); })}>撤销</button>
+        <button className="button ghost" disabled={busy || !!item.revoked} onClick={() => run(async () => { await api('/admin/invites/' + item.id, 'DELETE'); })}>撤销</button>
         <button className="button secondary" disabled={busy} onClick={() => {
-          if (window.confirm('确定重新激活此邀请码吗？原代码将恢复一次注册机会。')) void run(async () => { await api('/admin/invites/' + item.id + '/reactivate', 'POST', { hours }); });
+          if (window.confirm('确定重新激活此邀请码吗？原代码将在新的有效期内不限次注册。')) void run(async () => { await api('/admin/invites/' + item.id + '/reactivate', 'POST', { hours }); });
         }}>重新激活</button>
         <button className="button ghost class-delete" disabled={busy} onClick={() => {
           if (window.confirm('确定永久删除此邀请码吗？已注册的用户保留。')) void run(async () => { await api('/admin/invites/' + item.id + '/permanent', 'DELETE'); });

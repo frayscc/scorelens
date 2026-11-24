@@ -24,3 +24,18 @@
 .student-result .avatar { flex: 0 0 34px; width: 34px; height: 34px; }
 .student-result small { color: var(--muted); font-size: 10px; }
 .student-result em { margin-left: auto; color: #9a6a3a; font-size: 10px; font-style: normal; }
+.profile-head-actions { flex-wrap:wrap; justify-content:flex-end; }
+.student-sort { display:flex; align-items:flex-end; gap:8px; padding:10px 12px; flex-shrink:0; border-bottom:1px solid var(--line); }
+.student-sort label { display:grid; gap:5px; font-size:12px; color:var(--muted); }
+.student-sort select,.student-sort button { min-height:36px; padding:6px; border:1px solid var(--line); border-radius:6px; background:white; color:var(--ink); }
+.profile-pagination { display:flex; flex-wrap:wrap; gap:8px 16px; font-size:13px; color:var(--brand); }
+.profile-pagination small { color:var(--muted); }
+.selected-students { overflow:hidden; }
+.selected-students ol { list-style:none; margin:0; padding:8px 14px; max-height:300px; overflow:auto; }
+.selected-students li { display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--line); padding:6px; }
+.selected-students li.previewing { background:var(--brand-soft); }
+.selected-students li > button { min-width:40px; min-height:44px; border:0; background:transparent; color:var(--ink); border-radius:6px; }
+.selected-students li > button:hover { background:var(--brand-soft); }
+.selected-students li > button:disabled { opacity:.3; cursor:not-allowed; }
+.selected-students li .selected-preview { display:flex; flex:1; flex-wrap:wrap; align-items:center; gap:6px 16px; text-align:left; }
+.selected-preview span { font-size:12px; color:var(--muted); }
